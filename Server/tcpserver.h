@@ -36,13 +36,16 @@ private:
     void _display();
     QTcpSocket* _findSocketByUsername(const QString&);
 
-    QTcpServer *server;
+    QTcpServer* server;
     QList<QTcpSocket*> clients;
     QTcpSocket* socket;
 
     QString username;
 
     QMap<QString, QTcpSocket*> chats;
+    QMap<QString, QStringList> allChatsHistory;
+    QHash<QString, QList<QTcpSocket*>> chats_and_users;
+
 
     QTextEdit* chat;
     QPushButton* buttonOnServer;

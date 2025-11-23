@@ -161,79 +161,91 @@ void TcpServer::_readyRead() {
 
     QByteArray data = client_sender->readAll();
     QString message = QString::fromUtf8(data);
-    ////================================================РЕГУЛЯРКИ=============================================================
-    static QRegularExpression re("^Пользователь\\s+(.+)\\s+(подключился|присоединился)$");
-    QRegularExpressionMatch match_connect = re.match(message);
+    qDebug() << "SERVER CONSOLE:" << message;
+
+    ////======================================================РЕГУЛЯРКИ=========================================================
+    static QRegularExpression re_conn("^Пользователь\\s+(.+)\\s+(подключился|присоединился)$");
+    QRegularExpressionMatch match_connect = re_conn.match(message);
 
     static QRegularExpression re_create_chat("^CREATE_CHAT:(.+)$");
     QRegularExpressionMatch match_create_chat = re_create_chat.match(message);
 
-    static QRegularExpression re_send_msg("^SEND_MSG:(.+):(.+)$");
+    static QRegularExpression re_send_msg("^SEND_MSG:([^:]+):([^:]+):([\\s\\S]+)$");
     QRegularExpressionMatch match_send_msg = re_send_msg.match(message);
 
-    static QRegularExpression re_invite_chat("^INVITE_CHAT:(.+)$");
-    QRegularExpressionMatch match_invite_chat = re_invite_chat.match(message);
-    ////======================================================================================================================
+    static QRegularExpression re_invite_user("^INVITE_USER:([^:]+):(.+)$");
+    QRegularExpressionMatch match_invite_user = re_invite_user.match(message);
+
+    //======================================================НОВЫЙ ПОЛЬЗОВАТЕЛЬ===================================================
     if (match_connect.hasMatch()) {
         QString username = match_connect.captured(1).trimmed();
-
         QListWidgetItem* item = new QListWidgetItem(username);
         item->setData(Qt::UserRole, QVariant::fromValue(QPair<QString, QTcpSocket*>(username, client_sender)));
         lw_users->addItem(item);
-
-        foreach (QTcpSocket* client, clients) {
-            if (client != client_sender && client->state() == QTcpSocket::ConnectedState)
-                client->write(message.toUtf8());
-        }
-
         return;
     }
-
+    //======================================================СОЗДАТЬ НОВЫЙ ЧАТ====================================================
     if (match_create_chat.hasMatch()) {
-        QString chatName =match_create_chat.captured(1).trimmed();
-        if (chats.find(chatName) == chats.end()) {
+        QString chatName = match_create_chat.captured(1).trimmed();
+        if (!chats_and_users.contains(chatName)) {
             QListWidgetItem* item = new QListWidgetItem(chatName);
             lw_chatExisting->addItem(item);
-            chats.insert(chatName, client_sender);
-            QByteArray data = ("SERVER_CREATE_CHAT_OK_" + chatName).toUtf8();
-            client_sender->write(data);
+
+            chats_and_users[chatName] = QList<QTcpSocket*>{client_sender};
+            allChatsHistory[chatName] = QStringList();
+
+            client_sender->write(("SERVER_CREATE_CHAT_OK_" + chatName).toUtf8());
             client_sender->flush();
         } else {
-            QByteArray data = QString("SERVER_CREATE_CHAT_NO_Такой чат уже существует").toUtf8();
-            client_sender->write(data);
+            client_sender->write("SERVER_CREATE_CHAT_NO_Такой чат уже существует");
             client_sender->flush();
         }
         return;
     }
-
+    //======================================================ОТПРАВКА СООБЩЕНИЯ====================================================
     if (match_send_msg.hasMatch()) {
-        QString chatName = match_send_msg.captured(1);
-        QString msgContent = match_send_msg.captured(2);
-        chatName = chatName.replace(":", " : ");
-        chat->append(chatName + " : " + msgContent);
-        if (chats.contains(chatName)) {
-            foreach (QTcpSocket* client, clients) {
+        QString chatName = match_send_msg.captured(1).trimmed();
+        QString username = match_send_msg.captured(2).trimmed();
+        QString text = match_send_msg.captured(3);
+
+        allChatsHistory[chatName].append(username + ":" + text);
+        chat->append(chatName + " : " + username + " : " + text);
+
+        QString full = QString("SEND_MSG:%1:%2:%3").arg(chatName, username, text);
+
+        if (chats_and_users.contains(chatName))
+            for (auto& client : chats_and_users[chatName])
                 if (client != client_sender && client->state() == QTcpSocket::ConnectedState) {
-                    client->write(message.toUtf8());
+                    client->write(full.toUtf8());
                     client->flush();
                 }
-            }
+        return;
+    }
+    //======================================================ПРИГЛАСИТЬ ПОЛЬЗОВАТЕЛЯ==============================================
+    if (match_invite_user.hasMatch()) {
+        QString invitedUsername = match_invite_user.captured(1).trimmed();
+        QString chatName = match_invite_user.captured(2).trimmed();
+
+        QTcpSocket* invitedSocket = _findSocketByUsername(invitedUsername);
+        if (!invitedSocket)
+            return;
+
+        if (!chats_and_users.contains(chatName)) {
+            chats_and_users[chatName] = QList<QTcpSocket*>{};
+            QListWidgetItem* item = new QListWidgetItem(chatName);
+            lw_chatExisting->addItem(item);
+            allChatsHistory[chatName] = QStringList();
         }
+
+        if (!chats_and_users[chatName].contains(invitedSocket)) {
+            chats_and_users[chatName].append(invitedSocket);
+        }
+
+        QString historyString = allChatsHistory[chatName].join("\n");
+        invitedSocket->write(QString("SERVER_CHAT_HISTORY:%1\n%2").arg(chatName, historyString).toUtf8());
+        invitedSocket->flush();
         return;
     }
-
-    if (match_invite_chat.hasMatch()) {
-        QString invite_username = match_invite_chat.captured(1);
-        QString chatName = match_invite_chat.captured(2);
-
-        return;
-    }
-    ////======================================если ни один блок не сработал==================================================
-    foreach (QTcpSocket* client, clients) {
-        if (client != client_sender && client->state() == QTcpSocket::ConnectedState)
-            client->write(message.toUtf8());
-    }
-    chat->append(message);
 }
 
 void TcpServer::_clientDisconnect() {

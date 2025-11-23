@@ -86,58 +86,110 @@ void Client::_display() {
 }
 
 void Client::_sendMessage() {
-    QString messageText = str_message->text();
+    QString messageText = str_message->text().trimmed();
     if (messageText.isEmpty()) return;
 
-    QString message = username + " : " + messageText;
-    QString internalMessage = "SEND_MSG:" + currentChatName + ":" + message;
-    QByteArray data = internalMessage.toUtf8();
-
-    socket->write(data);
+    QString fullMessage = QString("SEND_MSG:%1:%2:%3").arg(currentChatName, username, messageText);
+    socket->write(fullMessage.toUtf8());
     socket->flush();
 
-    chat->append(message);
-    chatHistory[currentChatName].append(message);
+    QString only_client_message = username + ":" + messageText;
+    chat->append(only_client_message);
+    chatHistory[currentChatName].append(only_client_message);
     str_message->clear();
 }
+
 
 void Client::set_data(const QString username_, const QString password_) { username = username_; password = password_; }
 
 void Client::_readyRead() {
     QByteArray data = socket->readAll();
     QString message = QString::fromUtf8(data);
-    ////================================================РЕГУЛЯРКИ=============================================================
-    static QRegularExpression re_chat_ok("^SERVER_CREATE_CHAT_OK_(.+)$");
-    QRegularExpressionMatch match_ok_chat = re_chat_ok.match(message.trimmed());
+
+    ////======================================================РЕГУЛЯРКИ=========================================================
+    static QRegularExpression re_chat_ok("SERVER_CREATE_CHAT_OK_(.+)");
+    QRegularExpressionMatch match_ok_chat = re_chat_ok.match(message);
+
     static QRegularExpression re_chat_error("^SERVER_CREATE_CHAT_NO_Такой чат уже существует$");
     QRegularExpressionMatch match_error_chat = re_chat_error.match(message.trimmed());
-    static QRegularExpression re_send_msg("^SEND_MSG:(.+):(.+)$");
-    QRegularExpressionMatch match_send_msg = re_send_msg.match(message.trimmed());
-    ////======================================================================================================================
+
+    static QRegularExpression re_send_msg("^SEND_MSG:([^:]+):([^:]+):([\\s\\S]+)$");
+    QRegularExpressionMatch match_send_msg = re_send_msg.match(message);
+
+    static QRegularExpression re_history("^SERVER_CHAT_HISTORY:([^\\n]+)\\n([\\s\\S]*)$");
+    QRegularExpressionMatch match_history = re_history.match(message);
+
+
     if (match_ok_chat.hasMatch()) {
-        QString chatName = match_ok_chat.captured(1);
-        QListWidgetItem* item = new QListWidgetItem(chatName);
-        listChats->addItem(item);
+        QString chatName = match_ok_chat.captured(1).trimmed();
+        bool exist = false;
+
+        for (int i = 0; i < listChats->count(); ++i)
+            if (listChats->item(i)->text() == chatName) {
+                exist = true;
+                break;
+            }
+
+        if (!exist)
+            listChats->addItem(new QListWidgetItem(chatName));
+
         return;
     }
+
     if (match_error_chat.hasMatch()) {
         QMessageBox::warning(this, "Ошибка создания чата", "Чат с таким именем уже существует.");
         return;
     }
-    if (match_send_msg.hasMatch()) {
-        QString chatName = match_send_msg.captured(1);
-        QString msg = match_send_msg.captured(2);
-        chatHistory[chatName].append(msg);
 
-        if (chatName == currentChatName) {
-            chat->append(msg);
+    if (match_send_msg.hasMatch()) {
+        QString chatName = match_send_msg.captured(1).trimmed();
+        QString username = match_send_msg.captured(2).trimmed();
+        QString text = match_send_msg.captured(3);
+
+        QString full = username + ":" + text;
+        chatHistory[chatName].append(full);
+
+        if (chatName == currentChatName)
+            chat->append(full);
+        else {
+            bool exist = false;
+            for (int i = 0; i < listChats->count(); ++i)
+                if (listChats->item(i)->text() == chatName) {
+                    exist = true;
+                    break;
+                }
+            if (!exist)
+                listChats->addItem(new QListWidgetItem(chatName));
         }
         return;
     }
-    if (!message.isEmpty()) {
-        chat->append(message);
+
+    if (match_history.hasMatch()) {
+        QString chatName = match_history.captured(1).trimmed();
+        QString historyRaw = match_history.captured(2);
+        QStringList hist = historyRaw.split("\n", Qt::SkipEmptyParts);
+
+        bool exist = false;
+        for (int i = 0; i < listChats->count(); ++i)
+            if (listChats->item(i)->text() == chatName) {
+                exist = true;
+                break;
+            }
+
+        if (!exist)
+            listChats->addItem(new QListWidgetItem(chatName));
+
+        chatHistory[chatName] = hist;
+
+        if (currentChatName == chatName) {
+            chat->clear();
+            for (auto &msg : hist)
+                chat->append(msg);
+        }
+        return;
     }
 }
+
 
 void Client::_createNewChat() {
     CreateChatDialog t(this);
@@ -155,7 +207,13 @@ void Client::_invite_to_Chat() {
     Invite t(this);
     if (t.exec() == QDialog::Accepted) {
         QString invite_username = t.get_username();
-        QByteArray data = ("INVITE_USER:" + invite_username).toUtf8();
+
+        if (currentChatName.isEmpty()) {
+            QMessageBox::warning(this, "Приглашение", "Сначала выберите чат, в который хотите пригласить пользователя.");
+            return;
+        }
+
+        QByteArray data = ("INVITE_USER:" + invite_username + ":" + currentChatName).toUtf8();
         if (socket->state() == QTcpSocket::ConnectedState) {
             socket->write(data);
             socket->flush();
