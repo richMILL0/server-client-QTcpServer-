@@ -52,16 +52,22 @@ OBJECTS_DIR   = ./
 
 ####### Files
 
-SOURCES       = ../../createchat.cpp \
+SOURCES       = ../../chatmessagedelegate.cpp \
+		../../chatmodel.cpp \
+		../../createchat.cpp \
 		../../invite.cpp \
 		../../main.cpp \
 		../../client.cpp \
-		../../userdata.cpp moc_client.cpp
-OBJECTS       = createchat.o \
+		../../userdata.cpp moc_chatmessagedelegate.cpp \
+		moc_client.cpp
+OBJECTS       = chatmessagedelegate.o \
+		chatmodel.o \
+		createchat.o \
 		invite.o \
 		main.o \
 		client.o \
 		userdata.o \
+		moc_chatmessagedelegate.o \
 		moc_client.o
 DIST          = /opt/homebrew/share/qt/mkspecs/features/spec_pre.prf \
 		/opt/homebrew/share/qt/mkspecs/features/device_config.prf \
@@ -434,10 +440,14 @@ DIST          = /opt/homebrew/share/qt/mkspecs/features/spec_pre.prf \
 		/opt/homebrew/share/qt/mkspecs/features/exceptions.prf \
 		/opt/homebrew/share/qt/mkspecs/features/yacc.prf \
 		/opt/homebrew/share/qt/mkspecs/features/lex.prf \
-		../../../../Client.pro ../../client.h \
+		../../../../Client.pro ../../chatmessagedelegate.h \
+		../../chatmodel.h \
+		../../client.h \
 		../../createchat.h \
 		../../invite.h \
-		../../userdata.h ../../createchat.cpp \
+		../../userdata.h ../../chatmessagedelegate.cpp \
+		../../chatmodel.cpp \
+		../../createchat.cpp \
 		../../invite.cpp \
 		../../main.cpp \
 		../../client.cpp \
@@ -1244,8 +1254,8 @@ distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents /opt/homebrew/share/qt/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents ../../client.h ../../createchat.h ../../invite.h ../../userdata.h $(DISTDIR)/
-	$(COPY_FILE) --parents ../../createchat.cpp ../../invite.cpp ../../main.cpp ../../client.cpp ../../userdata.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents ../../chatmessagedelegate.h ../../chatmodel.h ../../client.h ../../createchat.h ../../invite.h ../../userdata.h $(DISTDIR)/
+	$(COPY_FILE) --parents ../../chatmessagedelegate.cpp ../../chatmodel.cpp ../../createchat.cpp ../../invite.cpp ../../main.cpp ../../client.cpp ../../userdata.cpp $(DISTDIR)/
 	$(COPY_FILE) --parents ../../client.ui $(DISTDIR)/
 
 
@@ -1281,12 +1291,41 @@ compiler_moc_predefs_clean:
 moc_predefs.h: /opt/homebrew/share/qt/mkspecs/features/data/dummy.cpp
 	/Library/Developer/CommandLineTools/usr/bin/clang++ -pipe -stdlib=libc++ -g -std=gnu++2a $(EXPORT_ARCH_ARGS) -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -mmacosx-version-min=14.0 -Wall -Wextra -dM -E -o moc_predefs.h /opt/homebrew/share/qt/mkspecs/features/data/dummy.cpp
 
-compiler_moc_header_make_all: moc_client.cpp
+compiler_moc_header_make_all: moc_chatmessagedelegate.cpp moc_client.cpp
 compiler_moc_header_clean:
-	-$(DEL_FILE) moc_client.cpp
+	-$(DEL_FILE) moc_chatmessagedelegate.cpp moc_client.cpp
+moc_chatmessagedelegate.cpp: ../../chatmessagedelegate.h \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/QStyledItemDelegate \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/qstyleditemdelegate.h \
+		/opt/homebrew/lib/QtGui.framework/Headers/QPainter \
+		/opt/homebrew/lib/QtGui.framework/Headers/qpainter.h \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/QApplication \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/qapplication.h \
+		moc_predefs.h \
+		/opt/homebrew/share/qt/libexec/moc
+	/opt/homebrew/share/qt/libexec/moc $(DEFINES) --include /Users/rech/Documents/QT/Client/build/Desktop-Debug/moc_predefs.h -I/opt/homebrew/share/qt/mkspecs/macx-clang -I/Users/rech/Documents/QT/Client -I/opt/homebrew/lib/QtWidgets.framework/Headers -I/opt/homebrew/lib/QtGui.framework/Headers -I/opt/homebrew/lib/QtNetwork.framework/Headers -I/opt/homebrew/lib/QtCore.framework/Headers -I. -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1 -I/Library/Developer/CommandLineTools/usr/lib/clang/16/include -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include -I/Library/Developer/CommandLineTools/usr/include -F/opt/homebrew/lib ../../chatmessagedelegate.h -o moc_chatmessagedelegate.cpp
+
 moc_client.cpp: ../../client.h \
+		../../chatmodel.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QAbstractListModel \
+		/opt/homebrew/lib/QtCore.framework/Headers/qabstractitemmodel.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QDateTime \
+		/opt/homebrew/lib/QtCore.framework/Headers/qdatetime.h \
+		../../chatmessagedelegate.h \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/QStyledItemDelegate \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/qstyleditemdelegate.h \
+		/opt/homebrew/lib/QtGui.framework/Headers/QPainter \
+		/opt/homebrew/lib/QtGui.framework/Headers/qpainter.h \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/QApplication \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/qapplication.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QMainWindow \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/qmainwindow.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QMap \
+		/opt/homebrew/lib/QtCore.framework/Headers/qmap.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QStringList \
+		/opt/homebrew/lib/QtCore.framework/Headers/qstringlist.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QRegularExpression \
+		/opt/homebrew/lib/QtCore.framework/Headers/qregularexpression.h \
 		moc_predefs.h \
 		/opt/homebrew/share/qt/libexec/moc
 	/opt/homebrew/share/qt/libexec/moc $(DEFINES) --include /Users/rech/Documents/QT/Client/build/Desktop-Debug/moc_predefs.h -I/opt/homebrew/share/qt/mkspecs/macx-clang -I/Users/rech/Documents/QT/Client -I/opt/homebrew/lib/QtWidgets.framework/Headers -I/opt/homebrew/lib/QtGui.framework/Headers -I/opt/homebrew/lib/QtNetwork.framework/Headers -I/opt/homebrew/lib/QtCore.framework/Headers -I. -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1 -I/Library/Developer/CommandLineTools/usr/lib/clang/16/include -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include -I/Library/Developer/CommandLineTools/usr/include -F/opt/homebrew/lib ../../client.h -o moc_client.cpp
@@ -1314,6 +1353,26 @@ compiler_clean: compiler_moc_predefs_clean compiler_moc_header_clean compiler_ui
 
 ####### Compile
 
+chatmessagedelegate.o: ../../chatmessagedelegate.cpp ../../chatmessagedelegate.h \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/QStyledItemDelegate \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/qstyleditemdelegate.h \
+		/opt/homebrew/lib/QtGui.framework/Headers/QPainter \
+		/opt/homebrew/lib/QtGui.framework/Headers/qpainter.h \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/QApplication \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/qapplication.h \
+		/opt/homebrew/lib/QtGui.framework/Headers/QTextLayout \
+		/opt/homebrew/lib/QtGui.framework/Headers/qtextlayout.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QAbstractItemModel \
+		/opt/homebrew/lib/QtCore.framework/Headers/qabstractitemmodel.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o chatmessagedelegate.o ../../chatmessagedelegate.cpp
+
+chatmodel.o: ../../chatmodel.cpp ../../chatmodel.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QAbstractListModel \
+		/opt/homebrew/lib/QtCore.framework/Headers/qabstractitemmodel.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QDateTime \
+		/opt/homebrew/lib/QtCore.framework/Headers/qdatetime.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o chatmodel.o ../../chatmodel.cpp
+
 createchat.o: ../../createchat.cpp ../../createchat.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QDialog \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/qdialog.h \
@@ -1329,26 +1388,69 @@ createchat.o: ../../createchat.cpp ../../createchat.h \
 
 invite.o: ../../invite.cpp ../../invite.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QDialog \
-		/opt/homebrew/lib/QtWidgets.framework/Headers/qdialog.h
+		/opt/homebrew/lib/QtWidgets.framework/Headers/qdialog.h \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/QVBoxLayout \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/qboxlayout.h \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/QHBoxLayout \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/QLabel \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/qlabel.h \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/QLineEdit \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/qlineedit.h \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/QPushButton \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/qpushbutton.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o invite.o ../../invite.cpp
 
 main.o: ../../main.cpp ../../client.h \
+		../../chatmodel.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QAbstractListModel \
+		/opt/homebrew/lib/QtCore.framework/Headers/qabstractitemmodel.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QDateTime \
+		/opt/homebrew/lib/QtCore.framework/Headers/qdatetime.h \
+		../../chatmessagedelegate.h \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/QStyledItemDelegate \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/qstyleditemdelegate.h \
+		/opt/homebrew/lib/QtGui.framework/Headers/QPainter \
+		/opt/homebrew/lib/QtGui.framework/Headers/qpainter.h \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/QApplication \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/qapplication.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QMainWindow \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/qmainwindow.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QMap \
+		/opt/homebrew/lib/QtCore.framework/Headers/qmap.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QStringList \
+		/opt/homebrew/lib/QtCore.framework/Headers/qstringlist.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QRegularExpression \
+		/opt/homebrew/lib/QtCore.framework/Headers/qregularexpression.h \
 		../../userdata.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QDialog \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/qdialog.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QLineEdit \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/qlineedit.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QTabWidget \
-		/opt/homebrew/lib/QtWidgets.framework/Headers/qtabwidget.h \
-		/opt/homebrew/lib/QtWidgets.framework/Headers/QApplication \
-		/opt/homebrew/lib/QtWidgets.framework/Headers/qapplication.h
+		/opt/homebrew/lib/QtWidgets.framework/Headers/qtabwidget.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o ../../main.cpp
 
 client.o: ../../client.cpp ../../client.h \
+		../../chatmodel.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QAbstractListModel \
+		/opt/homebrew/lib/QtCore.framework/Headers/qabstractitemmodel.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QDateTime \
+		/opt/homebrew/lib/QtCore.framework/Headers/qdatetime.h \
+		../../chatmessagedelegate.h \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/QStyledItemDelegate \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/qstyleditemdelegate.h \
+		/opt/homebrew/lib/QtGui.framework/Headers/QPainter \
+		/opt/homebrew/lib/QtGui.framework/Headers/qpainter.h \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/QApplication \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/qapplication.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QMainWindow \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/qmainwindow.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QMap \
+		/opt/homebrew/lib/QtCore.framework/Headers/qmap.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QStringList \
+		/opt/homebrew/lib/QtCore.framework/Headers/qstringlist.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QRegularExpression \
+		/opt/homebrew/lib/QtCore.framework/Headers/qregularexpression.h \
 		ui_client.h \
 		../../createchat.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QDialog \
@@ -1357,6 +1459,7 @@ client.o: ../../client.cpp ../../client.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/qlineedit.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QPushButton \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/qpushbutton.h \
+		../../invite.h \
 		/opt/homebrew/lib/QtNetwork.framework/Headers/QTcpSocket \
 		/opt/homebrew/lib/QtNetwork.framework/Headers/qtcpsocket.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QListWidget \
@@ -1371,7 +1474,9 @@ client.o: ../../client.cpp ../../client.h \
 		/opt/homebrew/lib/QtCore.framework/Headers/qbytearray.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QMessageBox \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/qmessagebox.h \
-		/opt/homebrew/lib/QtWidgets.framework/Headers/QListWidgetItem
+		/opt/homebrew/lib/QtWidgets.framework/Headers/QListWidgetItem \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/QListView \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/qlistview.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o client.o ../../client.cpp
 
 userdata.o: ../../userdata.cpp ../../userdata.h \
@@ -1391,6 +1496,9 @@ userdata.o: ../../userdata.cpp ../../userdata.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QFormLayout \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/qformlayout.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o userdata.o ../../userdata.cpp
+
+moc_chatmessagedelegate.o: moc_chatmessagedelegate.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_chatmessagedelegate.o moc_chatmessagedelegate.cpp
 
 moc_client.o: moc_client.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_client.o moc_client.cpp

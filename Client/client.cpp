@@ -2,6 +2,8 @@
 #include "ui_client.h"
 #include "createchat.h"
 #include "invite.h"
+#include "chatmodel.h"
+#include "chatmessagedelegate.h"
 #include <QTcpSocket>
 #include <QTcpSocket>
 #include <QListWidget>
@@ -13,6 +15,8 @@
 #include <QByteArray>
 #include <QMessageBox>
 #include <QListWidgetItem>
+#include <QListView>
+#include <QDateTime>
 
 Client::Client(QWidget *parent) : QMainWindow(parent), ui(new Ui::Client) {
     ui->setupUi(this);
@@ -35,13 +39,19 @@ void Client::_connectNewUser() {
 void Client::_display() {
     splitter = new QSplitter(Qt::Horizontal, this);
     listChats = new QListWidget(this);
-    chat = new QTextEdit(this);
+    chat = new QListView(this);
+    chatMessageDelegate = new ChatMessageDelegate(chat);
     buttonSend = new QPushButton("Отправить", this);
     str_message = new QLineEdit(this);
     buttonCreateNewChat = new QPushButton("Создать чат", this);
     buttonJoinChat = new QPushButton("Пригласить", this);
     ////=========================================НАСТРОЙКА КОМПОНЕНТОВ(ГЛУБО ГОВОРЯ)===========================================
-    chat->setReadOnly(true);
+    chat->setItemDelegate(chatMessageDelegate);
+    chat->setResizeMode(QListView::Adjust);
+    chat->setUniformItemSizes(false);
+    chat->setWordWrap(true);
+    chat->setSpacing(12);
+    chat->scrollToBottom();
     str_message->setReadOnly(true);
     str_message->setPlaceholderText("Ввести сообщение");
     buttonSend->setFixedSize(30, 30);
@@ -93,14 +103,18 @@ void Client::_sendMessage() {
     socket->write(fullMessage.toUtf8());
     socket->flush();
 
-    QString only_client_message = username + ":" + messageText;
-    chat->append(only_client_message);
-    chatHistory[currentChatName].append(only_client_message);
+    chatModels[currentChatName]->addMessage(ChatMessage_{username, messageText, QDateTime::currentDateTime()});
     str_message->clear();
 }
 
 
-void Client::set_data(const QString username_, const QString password_) { username = username_; password = password_; }
+void Client::set_data(const QString username_, const QString password_) {
+    username = username_;
+    password = password_;
+
+    if (chatMessageDelegate)
+        chatMessageDelegate->setMyUsername(username);
+}
 
 void Client::_readyRead() {
     QByteArray data = socket->readAll();
@@ -122,17 +136,14 @@ void Client::_readyRead() {
 
     if (match_ok_chat.hasMatch()) {
         QString chatName = match_ok_chat.captured(1).trimmed();
+        if (!chatModels.contains(chatName))
+            chatModels[chatName] = new ChatModel(this);
+
         bool exist = false;
-
         for (int i = 0; i < listChats->count(); ++i)
-            if (listChats->item(i)->text() == chatName) {
-                exist = true;
-                break;
-            }
-
+            if (listChats->item(i)->text() == chatName) { exist = true; break; }
         if (!exist)
             listChats->addItem(new QListWidgetItem(chatName));
-
         return;
     }
 
@@ -143,49 +154,46 @@ void Client::_readyRead() {
 
     if (match_send_msg.hasMatch()) {
         QString chatName = match_send_msg.captured(1).trimmed();
-        QString username = match_send_msg.captured(2).trimmed();
+        QString author = match_send_msg.captured(2).trimmed();
         QString text = match_send_msg.captured(3);
 
-        QString full = username + ":" + text;
-        chatHistory[chatName].append(full);
+        if (!chatModels.contains(chatName))
+            chatModels[chatName] = new ChatModel(this);
 
-        if (chatName == currentChatName)
-            chat->append(full);
-        else {
-            bool exist = false;
-            for (int i = 0; i < listChats->count(); ++i)
-                if (listChats->item(i)->text() == chatName) {
-                    exist = true;
-                    break;
-                }
-            if (!exist)
-                listChats->addItem(new QListWidgetItem(chatName));
-        }
+        chatModels[chatName]->addMessage(ChatMessage_{author, text, QDateTime::currentDateTime()});
+
+        bool exist = false;
+        for (int i = 0; i < listChats->count(); ++i)
+            if (listChats->item(i)->text() == chatName) { exist = true; break; }
+        if (!exist)
+            listChats->addItem(new QListWidgetItem(chatName));
+
         return;
     }
 
     if (match_history.hasMatch()) {
         QString chatName = match_history.captured(1).trimmed();
-        QString historyRaw = match_history.captured(2);
-        QStringList hist = historyRaw.split("\n", Qt::SkipEmptyParts);
+        QStringList hist = match_history.captured(2).split("\n", Qt::SkipEmptyParts);
+
+        if (!chatModels.contains(chatName))
+            chatModels[chatName] = new ChatModel(this);
+
+        for (auto &line : hist) {
+            QStringList parts = line.split(":", Qt::KeepEmptyParts);
+            QString author = parts.value(0);
+            QString text = parts.mid(1).join(":");
+            chatModels[chatName]->addMessage(ChatMessage_{author, text, QDateTime::currentDateTime()});
+        }
 
         bool exist = false;
         for (int i = 0; i < listChats->count(); ++i)
-            if (listChats->item(i)->text() == chatName) {
-                exist = true;
-                break;
-            }
-
+            if (listChats->item(i)->text() == chatName) { exist = true; break; }
         if (!exist)
             listChats->addItem(new QListWidgetItem(chatName));
 
-        chatHistory[chatName] = hist;
+        if (currentChatName == chatName)
+            chat->setModel(chatModels[chatName]);
 
-        if (currentChatName == chatName) {
-            chat->clear();
-            for (auto &msg : hist)
-                chat->append(msg);
-        }
         return;
     }
 }
@@ -223,24 +231,20 @@ void Client::_invite_to_Chat() {
 
 void Client::_setCurrentChatName() {
     QListWidgetItem* item = listChats->currentItem();
+    if (!item)
+        return;
     QString selectedChatName = item->text();
 
-    if (!currentChatName.isEmpty()) {
-        chatHistory[currentChatName] = chat->toPlainText().split("\n");
+    if (!chatModels.contains(selectedChatName)) {
+        chatModels[selectedChatName] = new ChatModel(this);
     }
 
+    chat->setModel(chatModels[selectedChatName]);
     currentChatName = selectedChatName;
-    chat->clear();
-    if (chatHistory.contains(currentChatName)) {
-        for (auto& msg : chatHistory[currentChatName]) {
-            if (!msg.isEmpty()) {
-                chat->append(msg);
-            }
-        }
-    } else {
-        chatHistory[currentChatName] = QStringList();
-    }
+
+    str_message->setReadOnly(false);
 }
+
 
 void Client::_str_message_change() {
     str_message->setReadOnly(false);
