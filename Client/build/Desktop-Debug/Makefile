@@ -58,7 +58,8 @@ SOURCES       = ../../chatmessagedelegate.cpp \
 		../../invite.cpp \
 		../../main.cpp \
 		../../client.cpp \
-		../../userdata.cpp moc_chatmessagedelegate.cpp \
+		../../userdata.cpp qrc_res.cpp \
+		moc_chatmessagedelegate.cpp \
 		moc_client.cpp
 OBJECTS       = chatmessagedelegate.o \
 		chatmodel.o \
@@ -67,6 +68,7 @@ OBJECTS       = chatmessagedelegate.o \
 		main.o \
 		client.o \
 		userdata.o \
+		qrc_res.o \
 		moc_chatmessagedelegate.o \
 		moc_client.o
 DIST          = /opt/homebrew/share/qt/mkspecs/features/spec_pre.prf \
@@ -848,6 +850,7 @@ Makefile: ../../Client.pro /opt/homebrew/share/qt/mkspecs/macx-clang/qmake.conf 
 		/opt/homebrew/share/qt/mkspecs/features/yacc.prf \
 		/opt/homebrew/share/qt/mkspecs/features/lex.prf \
 		../../Client.pro \
+		../../res.qrc \
 		/opt/homebrew/lib/QtWidgets.framework/Resources/QtWidgets.prl \
 		/opt/homebrew/lib/QtGui.framework/Resources/QtGui.prl \
 		/opt/homebrew/lib/QtNetwork.framework/Resources/QtNetwork.prl \
@@ -1225,6 +1228,7 @@ Makefile: ../../Client.pro /opt/homebrew/share/qt/mkspecs/macx-clang/qmake.conf 
 /opt/homebrew/share/qt/mkspecs/features/yacc.prf:
 /opt/homebrew/share/qt/mkspecs/features/lex.prf:
 ../../Client.pro:
+../../res.qrc:
 /opt/homebrew/lib/QtWidgets.framework/Resources/QtWidgets.prl:
 /opt/homebrew/lib/QtGui.framework/Resources/QtGui.prl:
 /opt/homebrew/lib/QtNetwork.framework/Resources/QtNetwork.prl:
@@ -1253,6 +1257,7 @@ dist: distdir FORCE
 distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
+	$(COPY_FILE) --parents ../../res.qrc $(DISTDIR)/
 	$(COPY_FILE) --parents /opt/homebrew/share/qt/mkspecs/features/data/dummy.cpp $(DISTDIR)/
 	$(COPY_FILE) --parents ../../chatmessagedelegate.h ../../chatmodel.h ../../client.h ../../createchat.h ../../invite.h ../../userdata.h $(DISTDIR)/
 	$(COPY_FILE) --parents ../../chatmessagedelegate.cpp ../../chatmodel.cpp ../../createchat.cpp ../../invite.cpp ../../main.cpp ../../client.cpp ../../userdata.cpp $(DISTDIR)/
@@ -1283,8 +1288,18 @@ check: first
 
 benchmark: first
 
-compiler_rcc_make_all:
+compiler_rcc_make_all: qrc_res.cpp
 compiler_rcc_clean:
+	-$(DEL_FILE) qrc_res.cpp
+qrc_res.cpp: ../../res.qrc \
+		/opt/homebrew/share/qt/libexec/rcc \
+		../../main.qss \
+		../../file.svg \
+		../../emoji.png \
+		../../file_2.png \
+		../../send.png
+	/opt/homebrew/share/qt/libexec/rcc -name res ../../res.qrc -o qrc_res.cpp
+
 compiler_moc_predefs_make_all: moc_predefs.h
 compiler_moc_predefs_clean:
 	-$(DEL_FILE) moc_predefs.h
@@ -1297,10 +1312,8 @@ compiler_moc_header_clean:
 moc_chatmessagedelegate.cpp: ../../chatmessagedelegate.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QStyledItemDelegate \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/qstyleditemdelegate.h \
-		/opt/homebrew/lib/QtGui.framework/Headers/QPainter \
-		/opt/homebrew/lib/QtGui.framework/Headers/qpainter.h \
-		/opt/homebrew/lib/QtWidgets.framework/Headers/QApplication \
-		/opt/homebrew/lib/QtWidgets.framework/Headers/qapplication.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QString \
+		/opt/homebrew/lib/QtCore.framework/Headers/qstring.h \
 		moc_predefs.h \
 		/opt/homebrew/share/qt/libexec/moc
 	/opt/homebrew/share/qt/libexec/moc $(DEFINES) --include /Users/rech/Documents/QT/Client/build/Desktop-Debug/moc_predefs.h -I/opt/homebrew/share/qt/mkspecs/macx-clang -I/Users/rech/Documents/QT/Client -I/opt/homebrew/lib/QtWidgets.framework/Headers -I/opt/homebrew/lib/QtGui.framework/Headers -I/opt/homebrew/lib/QtNetwork.framework/Headers -I/opt/homebrew/lib/QtCore.framework/Headers -I. -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1 -I/Library/Developer/CommandLineTools/usr/lib/clang/16/include -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include -I/Library/Developer/CommandLineTools/usr/include -F/opt/homebrew/lib ../../chatmessagedelegate.h -o moc_chatmessagedelegate.cpp
@@ -1314,10 +1327,8 @@ moc_client.cpp: ../../client.h \
 		../../chatmessagedelegate.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QStyledItemDelegate \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/qstyleditemdelegate.h \
-		/opt/homebrew/lib/QtGui.framework/Headers/QPainter \
-		/opt/homebrew/lib/QtGui.framework/Headers/qpainter.h \
-		/opt/homebrew/lib/QtWidgets.framework/Headers/QApplication \
-		/opt/homebrew/lib/QtWidgets.framework/Headers/qapplication.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QString \
+		/opt/homebrew/lib/QtCore.framework/Headers/qstring.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QMainWindow \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/qmainwindow.h \
 		/opt/homebrew/lib/QtCore.framework/Headers/QMap \
@@ -1349,21 +1360,26 @@ compiler_yacc_impl_make_all:
 compiler_yacc_impl_clean:
 compiler_lex_make_all:
 compiler_lex_clean:
-compiler_clean: compiler_moc_predefs_clean compiler_moc_header_clean compiler_uic_clean 
+compiler_clean: compiler_rcc_clean compiler_moc_predefs_clean compiler_moc_header_clean compiler_uic_clean 
 
 ####### Compile
 
 chatmessagedelegate.o: ../../chatmessagedelegate.cpp ../../chatmessagedelegate.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QStyledItemDelegate \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/qstyleditemdelegate.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QString \
+		/opt/homebrew/lib/QtCore.framework/Headers/qstring.h \
+		../../chatmodel.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QAbstractListModel \
+		/opt/homebrew/lib/QtCore.framework/Headers/qabstractitemmodel.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QDateTime \
+		/opt/homebrew/lib/QtCore.framework/Headers/qdatetime.h \
 		/opt/homebrew/lib/QtGui.framework/Headers/QPainter \
 		/opt/homebrew/lib/QtGui.framework/Headers/qpainter.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QApplication \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/qapplication.h \
 		/opt/homebrew/lib/QtGui.framework/Headers/QTextLayout \
-		/opt/homebrew/lib/QtGui.framework/Headers/qtextlayout.h \
-		/opt/homebrew/lib/QtCore.framework/Headers/QAbstractItemModel \
-		/opt/homebrew/lib/QtCore.framework/Headers/qabstractitemmodel.h
+		/opt/homebrew/lib/QtGui.framework/Headers/qtextlayout.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o chatmessagedelegate.o ../../chatmessagedelegate.cpp
 
 chatmodel.o: ../../chatmodel.cpp ../../chatmodel.h \
@@ -1409,10 +1425,8 @@ main.o: ../../main.cpp ../../client.h \
 		../../chatmessagedelegate.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QStyledItemDelegate \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/qstyleditemdelegate.h \
-		/opt/homebrew/lib/QtGui.framework/Headers/QPainter \
-		/opt/homebrew/lib/QtGui.framework/Headers/qpainter.h \
-		/opt/homebrew/lib/QtWidgets.framework/Headers/QApplication \
-		/opt/homebrew/lib/QtWidgets.framework/Headers/qapplication.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QString \
+		/opt/homebrew/lib/QtCore.framework/Headers/qstring.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QMainWindow \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/qmainwindow.h \
 		/opt/homebrew/lib/QtCore.framework/Headers/QMap \
@@ -1427,7 +1441,11 @@ main.o: ../../main.cpp ../../client.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QLineEdit \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/qlineedit.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QTabWidget \
-		/opt/homebrew/lib/QtWidgets.framework/Headers/qtabwidget.h
+		/opt/homebrew/lib/QtWidgets.framework/Headers/qtabwidget.h \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/QApplication \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/qapplication.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QFile \
+		/opt/homebrew/lib/QtCore.framework/Headers/qfile.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o ../../main.cpp
 
 client.o: ../../client.cpp ../../client.h \
@@ -1439,10 +1457,8 @@ client.o: ../../client.cpp ../../client.h \
 		../../chatmessagedelegate.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QStyledItemDelegate \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/qstyleditemdelegate.h \
-		/opt/homebrew/lib/QtGui.framework/Headers/QPainter \
-		/opt/homebrew/lib/QtGui.framework/Headers/qpainter.h \
-		/opt/homebrew/lib/QtWidgets.framework/Headers/QApplication \
-		/opt/homebrew/lib/QtWidgets.framework/Headers/qapplication.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QString \
+		/opt/homebrew/lib/QtCore.framework/Headers/qstring.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QMainWindow \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/qmainwindow.h \
 		/opt/homebrew/lib/QtCore.framework/Headers/QMap \
@@ -1462,6 +1478,8 @@ client.o: ../../client.cpp ../../client.h \
 		../../invite.h \
 		/opt/homebrew/lib/QtNetwork.framework/Headers/QTcpSocket \
 		/opt/homebrew/lib/QtNetwork.framework/Headers/qtcpsocket.h \
+		/opt/homebrew/lib/QtCore.framework/Headers/QFile \
+		/opt/homebrew/lib/QtCore.framework/Headers/qfile.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QListWidget \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/qlistwidget.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QTextEdit \
@@ -1496,6 +1514,9 @@ userdata.o: ../../userdata.cpp ../../userdata.h \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/QFormLayout \
 		/opt/homebrew/lib/QtWidgets.framework/Headers/qformlayout.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o userdata.o ../../userdata.cpp
+
+qrc_res.o: qrc_res.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o qrc_res.o qrc_res.cpp
 
 moc_chatmessagedelegate.o: moc_chatmessagedelegate.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_chatmessagedelegate.o moc_chatmessagedelegate.cpp

@@ -5,6 +5,7 @@
 #include "chatmodel.h"
 #include "chatmessagedelegate.h"
 #include <QTcpSocket>
+#include <QFile>
 #include <QTcpSocket>
 #include <QListWidget>
 #include <QTextEdit>
@@ -41,10 +42,12 @@ void Client::_display() {
     listChats = new QListWidget(this);
     chat = new QListView(this);
     chatMessageDelegate = new ChatMessageDelegate(chat);
-    buttonSend = new QPushButton("Отправить", this);
+    buttonSend = new QPushButton("", this);
     str_message = new QLineEdit(this);
     buttonCreateNewChat = new QPushButton("Создать чат", this);
     buttonJoinChat = new QPushButton("Пригласить", this);
+    buttonSelectFile = new QPushButton("", this);
+    buttonEmoji = new QPushButton("", this);
     ////=========================================НАСТРОЙКА КОМПОНЕНТОВ(ГЛУБО ГОВОРЯ)===========================================
     chat->setItemDelegate(chatMessageDelegate);
     chat->setResizeMode(QListView::Adjust);
@@ -52,21 +55,30 @@ void Client::_display() {
     chat->setWordWrap(true);
     chat->setSpacing(12);
     chat->scrollToBottom();
-    str_message->setReadOnly(true);
+
+    str_message->setEnabled(false);
     str_message->setPlaceholderText("Ввести сообщение");
+
+    buttonSelectFile->setFixedSize(30, 30);
+    buttonEmoji->setFixedSize(30, 30);
     buttonSend->setFixedSize(30, 30);
+    buttonSelectFile->setObjectName("ButtonSelectFile");
+    buttonEmoji->setObjectName("ButtonEmoji");
+    buttonSend->setObjectName("ButtonSend");
+    buttonCreateNewChat->setObjectName("buttonCreateNewChat");
+    buttonJoinChat->setObjectName("buttonJoinChat");
     ////================================================ЛЕВАЯ ЧАСТЬ============================================================
     QWidget* buttonWidget = new QWidget();
     QHBoxLayout* buttonLayout = new QHBoxLayout();
-    buttonLayout->setContentsMargins(0, 0, 0, 0);
+    buttonLayout->setContentsMargins(0, 0, 7, 20);
     buttonLayout->addWidget(buttonCreateNewChat);
     buttonLayout->addWidget(buttonJoinChat);
     buttonWidget->setLayout(buttonLayout);
 
     QVBoxLayout* leftLayout = new QVBoxLayout();
-    leftLayout->setContentsMargins(0, 0, 0, 0);
+    leftLayout->setContentsMargins(7, 4, 0, 4);
     leftLayout->addWidget(listChats, 9);
-    leftLayout->addWidget(buttonWidget, 1);
+    leftLayout->addWidget(buttonWidget, 0);
 
     QWidget* leftWidget = new QWidget();
     leftWidget->setLayout(leftLayout);
@@ -75,9 +87,13 @@ void Client::_display() {
     rightLayout->addWidget(chat, 9);
 
     QHBoxLayout *bottomLayout = new QHBoxLayout();
-    bottomLayout->addWidget(str_message, 8);
-    bottomLayout->addWidget(buttonSend, 2);
-    rightLayout->setContentsMargins(0, 0, 0, 0);
+    bottomLayout->addWidget(buttonSelectFile);
+    str_message->setContentsMargins(0, 20, 0, 0);
+    bottomLayout->addWidget(str_message);
+    bottomLayout->addWidget(buttonEmoji);
+    bottomLayout->addWidget(buttonSend);
+    bottomLayout->setContentsMargins(4, 0, 0, 0);
+    rightLayout->setContentsMargins(0, 4, 13, 10);
     rightLayout->addLayout(bottomLayout, 1);
 
     QWidget *rightWidget = new QWidget();
@@ -93,6 +109,7 @@ void Client::_display() {
     connect(buttonJoinChat, &QPushButton::clicked, this, &Client::_invite_to_Chat);
     connect(listChats, &QListWidget::itemClicked, this, &Client::_setCurrentChatName);
     connect(listChats, &QListWidget::itemClicked, this, &Client::_str_message_change);
+    connect(buttonSelectFile, &QPushButton::clicked, this, &Client::_sendFile);
 }
 
 void Client::_sendMessage() {
@@ -119,7 +136,6 @@ void Client::set_data(const QString username_, const QString password_) {
 void Client::_readyRead() {
     QByteArray data = socket->readAll();
     QString message = QString::fromUtf8(data);
-
     ////======================================================РЕГУЛЯРКИ=========================================================
     static QRegularExpression re_chat_ok("SERVER_CREATE_CHAT_OK_(.+)");
     QRegularExpressionMatch match_ok_chat = re_chat_ok.match(message);
@@ -133,12 +149,13 @@ void Client::_readyRead() {
     static QRegularExpression re_history("^SERVER_CHAT_HISTORY:([^\\n]+)\\n([\\s\\S]*)$");
     QRegularExpressionMatch match_history = re_history.match(message);
 
-
+    //===========================================Одобрение создания чата======================================================
     if (match_ok_chat.hasMatch()) {
         QString chatName = match_ok_chat.captured(1).trimmed();
-        if (!chatModels.contains(chatName))
+        if (!chatModels.contains(chatName)) {
             chatModels[chatName] = new ChatModel(this);
-
+            connect(chatModels[chatName], &QAbstractItemModel::rowsInserted, chat, &QAbstractItemView::scrollToBottom);
+        }
         bool exist = false;
         for (int i = 0; i < listChats->count(); ++i)
             if (listChats->item(i)->text() == chatName) { exist = true; break; }
@@ -146,19 +163,21 @@ void Client::_readyRead() {
             listChats->addItem(new QListWidgetItem(chatName));
         return;
     }
-
+    //===========================================Отказ создания чата===========================================================
     if (match_error_chat.hasMatch()) {
         QMessageBox::warning(this, "Ошибка создания чата", "Чат с таким именем уже существует.");
         return;
     }
-
+    //===========================================Отправка сообщения============================================================
     if (match_send_msg.hasMatch()) {
         QString chatName = match_send_msg.captured(1).trimmed();
         QString author = match_send_msg.captured(2).trimmed();
         QString text = match_send_msg.captured(3);
 
-        if (!chatModels.contains(chatName))
+        if (!chatModels.contains(chatName)) {
             chatModels[chatName] = new ChatModel(this);
+            connect(chatModels[chatName], &QAbstractItemModel::rowsInserted, chat, &QAbstractItemView::scrollToBottom);
+        }
 
         chatModels[chatName]->addMessage(ChatMessage_{author, text, QDateTime::currentDateTime()});
 
@@ -167,16 +186,17 @@ void Client::_readyRead() {
             if (listChats->item(i)->text() == chatName) { exist = true; break; }
         if (!exist)
             listChats->addItem(new QListWidgetItem(chatName));
-
         return;
     }
-
+    //===========================================Подгрузка истории============================================================
     if (match_history.hasMatch()) {
         QString chatName = match_history.captured(1).trimmed();
         QStringList hist = match_history.captured(2).split("\n", Qt::SkipEmptyParts);
 
-        if (!chatModels.contains(chatName))
+        if (!chatModels.contains(chatName)) {
             chatModels[chatName] = new ChatModel(this);
+            connect(chatModels[chatName], &QAbstractItemModel::rowsInserted, chat, &QAbstractItemView::scrollToBottom);
+        }
 
         for (auto &line : hist) {
             QStringList parts = line.split(":", Qt::KeepEmptyParts);
@@ -197,7 +217,6 @@ void Client::_readyRead() {
         return;
     }
 }
-
 
 void Client::_createNewChat() {
     CreateChatDialog t(this);
@@ -237,15 +256,17 @@ void Client::_setCurrentChatName() {
 
     if (!chatModels.contains(selectedChatName)) {
         chatModels[selectedChatName] = new ChatModel(this);
+        connect(chatModels[selectedChatName], &QAbstractItemModel::rowsInserted, chat, &QAbstractItemView::scrollToBottom);
     }
 
     chat->setModel(chatModels[selectedChatName]);
     currentChatName = selectedChatName;
 
-    str_message->setReadOnly(false);
+    str_message->setEnabled(true);
 }
 
+void Client::_sendFile() {
 
-void Client::_str_message_change() {
-    str_message->setReadOnly(false);
 }
+
+void Client::_str_message_change() { str_message->setEnabled(true); }

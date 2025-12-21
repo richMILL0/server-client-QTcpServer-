@@ -55,7 +55,9 @@ private:
     void _invite_to_Chat();
     void _setCurrentChatName();
     void _str_message_change();
-    QListWidgetItem* _findItemByChatName(QListWidget* listWidget, const QString& chatName);
+    void _sendFile();
+
+    QListWidgetItem* _findItemByChatName(QListWidget*, const QString&);
 
     QTcpSocket* socket;
 
@@ -72,9 +74,17 @@ private:
     QPushButton* buttonSend;
     QPushButton* buttonCreateNewChat;
     QPushButton* buttonJoinChat;
+    QPushButton* buttonSelectFile;
+    QPushButton* buttonEmoji;
     QSplitter* splitter;
 
     Ui::Client *ui;
 };
 
+
 #endif // CLIENT_H
+
+
+
+
+

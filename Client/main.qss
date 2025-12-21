@@ -1,0 +1,256 @@
+/* ------------------------------------------------------------------
+   ГЛОБАЛЬНЫЙ СТИЛЬ ТЁМНОЙ ТЕМЫ
+------------------------------------------------------------------ */
+QWidget {
+    background-color: #1f2329;
+    font-family: -apple-system, "SF Pro Text", "Helvetica Neue", sans-serif;
+    font-size: 14px;
+    color: #f5f5f5;
+}
+
+/* ------------------------------------------------------------------
+   СПИСОК ЧАТОВ / СООБЩЕНИЙ — QListView и QListWidget
+------------------------------------------------------------------ */
+QListWidget {
+    background: #1c1f24;
+    border: none;
+}
+
+QListWidget::item {
+    padding: 8px 12px;
+    margin: 2px 0;
+    border-radius: 8px;
+    color: #e7e7e7;
+}
+
+QListWidget::item:selected {
+    background: #2b5278;
+    color: #ffffff;
+}
+
+QListWidget::item:hover {
+    background: #2a2e34;
+}
+
+QListView {
+    background: #1f2329;
+    border: none;
+    outline: none;
+    padding: 6px;
+}
+
+QListView::item {
+    border: none;
+}
+
+/* ------------------------------------------------------------------
+   QLineEdit — общий стиль + регистрационное окно
+------------------------------------------------------------------ */
+QLineEdit {
+    background: #2b3036;
+    border: 1px solid #3b4048;
+    border-radius: 16px;
+    padding: 6px 10px;
+    color: #ffffff;
+
+    outline: none;
+}
+
+QLineEdit:focus {
+    border: 1px solid #5ca0ff;
+    background: #2d333a;
+    outline: none;
+}
+
+QLineEdit:focus-within {
+    outline: none;
+    box-shadow: 0 0 0 2px transparent;
+}
+
+QLineEdit#RegisterField {
+    border-radius: 14px;
+    background: #2b3036;
+}
+
+QLineEdit#RegisterField:focus {
+    border: 1px solid #5ca0ff;
+}
+
+/* ------------------------------------------------------------------
+   КНОПКИ (обычные)
+------------------------------------------------------------------ */
+QPushButton {
+    background: #2b3036;
+    border: 1px solid #3b4048;
+    border-radius: 14px;
+    padding: 4px 10px;
+    color: #e6e6e6;
+}
+
+QPushButton:hover {
+    background: #363c44;
+}
+
+QPushButton:pressed {
+    background: #3f4650;
+}
+
+/* ------------------------------------------------------------------
+   Кнопка регистрации
+------------------------------------------------------------------ */
+QPushButton#RegisterButton {
+    background: #2b5278;
+    border: none;
+    color: white;
+    border-radius: 14px;
+    padding: 8px 14px;
+}
+
+QPushButton#RegisterButton:hover {
+    background: #366e9e;
+}
+
+QPushButton#RegisterButton:pressed {
+    background: #1f3f5c;
+}
+
+/* ------------------------------------------------------------------
+   ИКОНОЧНЫЕ КНОПКИ (три разные картинки)
+------------------------------------------------------------------ */
+
+/* Общий стиль */
+QPushButton#ButtonSelectFile,
+QPushButton#ButtonEmoji,
+QPushButton#ButtonSend {
+    border: none;
+    background: transparent;
+    padding: 6px;
+    min-width: 32px;
+    min-height: 32px;
+    border-radius: 16px;
+}
+
+/* Hover / Press */
+QPushButton#ButtonSelectFile:hover,
+QPushButton#ButtonEmoji:hover,
+QPushButton#ButtonSend:hover {
+    background-color: rgba(255,255,255,0.07);
+}
+
+QPushButton#ButtonSelectFile:pressed,
+QPushButton#ButtonEmoji:pressed,
+QPushButton#ButtonSend:pressed {
+    background-color: rgba(255,255,255,0.12);
+}
+
+QPushButton#ButtonSelectFile {
+    qproperty-icon: url(":/icons/file_2.png");
+    qproperty-iconSize: 30px 30px;
+}
+
+QPushButton#ButtonEmoji {
+    qproperty-icon: url(":/icons/emoji.png");
+    qproperty-iconSize: 30px 30px;
+}
+
+QPushButton#ButtonSend {
+    qproperty-icon: url(":/icons/send.png");
+    qproperty-iconSize: 30px 30px;
+}
+
+QPushButton#buttonCreateNewChat,
+QPushButton#buttonJoinChat {
+    border: none;
+    border-radius: 14px;
+    padding: 8px 14px;
+}
+
+/* ------------------------------------------------------------------
+   QSplitter
+------------------------------------------------------------------ */
+QSplitter::handle {
+    background: #2c3036;
+    width: 1px;
+}
+
+/* ------------------------------------------------------------------
+   СКРОЛЛБАРЫ — тёмный Telegram-style
+------------------------------------------------------------------ */
+QScrollBar:vertical {
+    background: transparent;
+    width: 6px;
+    margin: 0;
+}
+
+QScrollBar::handle:vertical {
+    background: #4a4f57;
+    min-height: 40px;
+    border-radius: 3px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #5b616b;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0;
+}
+
+QScrollBar:horizontal {
+    background: transparent;
+    height: 6px;
+    margin: 0;
+}
+
+QScrollBar::handle:horizontal {
+    background: #4a4f57;
+    min-width: 40px;
+    border-radius: 3px;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background: #5b616b;
+}
+
+QScrollBar::add-line:horizontal,
+QScrollBar::sub-line:horizontal {
+    width: 0;
+}
+
+* {
+    outline: none !important;
+}
+
+*:focus {
+    outline: none !important;
+    border: none !important;
+}
+
+QWidget:focus {
+    outline: none !important;
+    border: none !important;
+}
+
+QFrame:focus {
+    outline: none !important;
+    border: none !important;
+}
+
+QSplitter:focus {
+    border: none !important;
+    outline: none !important;
+}
+
+QMainWindow:focus {
+    border: none !important;
+    outline: none !important;
+}
+
+QWidget#centralWidget:focus {
+    border: none !important;
+    outline: none !important;
+}
+
+
+

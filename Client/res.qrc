@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qss</file>
+    </qresource>
+    <qresource prefix="/icons">
+        <file>emoji.png</file>
+        <file>file.svg</file>
+        <file>send.png</file>
+        <file>file_2.png</file>
+    </qresource>
+</RCC>

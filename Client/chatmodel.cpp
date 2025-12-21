@@ -1,8 +1,6 @@
 #include "chatmodel.h"
 
-ChatModel::ChatModel(QObject *parent)
-    : QAbstractListModel{parent}
-{}
+ChatModel::ChatModel(QObject *parent) : QAbstractListModel{parent} {}
 
 void ChatModel::addMessage(const ChatMessage_ &msg) {
     beginInsertRows(QModelIndex(), messages.size(), messages.size());
